@@ -1,0 +1,92 @@
+[
+  {
+    "show_id": "S001",
+    "name": "Morning Lion Feeding",
+    "animal": "lion",
+    "time": "09:30 AM",
+    "duration": "30 mins",
+    "description": "Watch the zookeepers feed the lions their breakfast.",
+    "location": "The Big Cat Plains"
+  },
+  {
+    "show_id": "S002",
+    "name": "Penguin Parade",
+    "animal": "penguin",
+    "time": "02:15 PM",
+    "duration": "20 mins",
+    "description": "See the penguins march around their enclosure.",
+    "location": "The Arctic Exhibit"
+  },
+  {
+    "show_id": "S003",
+    "name": "Elephant Bath Time",
+    "animal": "elephant",
+    "time": "01:45 PM",
+    "duration": "45 mins",
+    "description": "Watch the elephants get a bath and play in the water.",
+    "location": "The Pachyderm Sanctuary"
+  },
+  {
+    "show_id": "S004",
+    "name": "Giraffe Feeding Experience",
+    "animal": "giraffe",
+    "time": "11:00 AM",
+    "duration": "30 mins",
+    "description": "Feed the giraffes from the raised platform.",
+    "location": "The Tall Grass Plains"
+  },
+  {
+    "show_id": "S005",
+    "name": "Grizzly Bear Catch",
+    "animal": "bear",
+    "time": "10:30 AM",
+    "duration": "25 mins",
+    "description": "Observe the grizzly bears demonstrating their fishing skills.",
+    "location": "The Grizzly Gulch"
+  },
+  {
+    "show_id": "S006",
+    "name": "Polar Bear Plunge",
+    "animal": "polar bear",
+    "time": "03:00 PM",
+    "duration": "20 mins",
+    "description": "Watch the polar bears dive and swim in their icy pool.",
+    "location": "The Arctic Exhibit"
+  },
+  {
+    "show_id": "S007",
+    "name": "Walrus Whistle",
+    "animal": "walrus",
+    "time": "12:15 PM",
+    "duration": "15 mins",
+    "description": "A fun training session where walruses show off their sounds.",
+    "location": "The Walrus Cove"
+  },
+  {
+    "show_id": "S008",
+    "name": "Antelope Sprint",
+    "animal": "antelope",
+    "time": "04:00 PM",
+    "duration": "15 mins",
+    "description": "Witness the incredible speed of the antelopes across the plains.",
+    "location": "The Tall Grass Plains"
+  },
+  {
+    "show_id": "S009",
+    "name": "Early Bird Lion Watch",
+    "animal": "lion",
+    "time": "08:00 AM",
+    "duration": "45 mins",
+    "description": "A quiet observation session of the lions as the zoo opens.",
+    "location": "The Big Cat Plains"
+  },
+  {
+    "show_id": "S010",
+    "name": "Afternoon Elephant Snack",
+    "animal": "elephant",
+    "time": "03:45 PM",
+    "duration": "20 mins",
+    "description": "Watch the elephants enjoy their afternoon treats.",
+    "location": "The Pachyderm Sanctuary"
+  }
+]

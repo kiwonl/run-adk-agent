@@ -1,0 +1,6 @@
+google-adk
+requests
+a2a-sdk
+python-dotenv
+google-cloud-logging
+google-auth
