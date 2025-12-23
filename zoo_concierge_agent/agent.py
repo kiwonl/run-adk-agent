@@ -1,4 +1,3 @@
-
 import os
 import logging
 from dotenv import load_dotenv
@@ -53,6 +52,7 @@ mcp_tools = MCPToolset(
     ),
 )
 
+
 # Tool to save the initial user prompt to the agent's state.
 def add_prompt_to_state(tool_context: ToolContext, prompt: str) -> dict[str, str]:
     tool_context.state["PROMPT"] = prompt
@@ -62,22 +62,24 @@ def add_prompt_to_state(tool_context: ToolContext, prompt: str) -> dict[str, str
 
 # Callback to automatically save the session to memory after agent execution.
 async def auto_save_session_to_memory_callback(callback_context: CallbackContext):
-  try:
-    inv_ctx = getattr(callback_context, "_invocation_context", None)
-    if not inv_ctx or not inv_ctx.memory_service:
-      logger.warning("⚠️ Memory Service not set, skipping memory save.")
-      return
+    try:
+        inv_ctx = getattr(callback_context, "_invocation_context", None)
+        if not inv_ctx or not inv_ctx.memory_service:
+            logger.warning("⚠️ Memory Service not set, skipping memory save.")
+            return
 
-    logger.info(f"💾 Saving session {inv_ctx.session.id} to memory...")
-    added_memories = await inv_ctx.memory_service.add_session_to_memory(inv_ctx.session)
-    
-    if added_memories:
-      logger.info(f"✨ Saved Memory Content: {added_memories}")
-    else:
-      logger.info("🚫 No new memories generated.")
+        logger.info(f"💾 Saving session {inv_ctx.session.id} to memory...")
+        added_memories = await inv_ctx.memory_service.add_session_to_memory(
+            inv_ctx.session
+        )
 
-  except Exception as e:
-    logger.error(f"❌ Error saving memory: {e}", exc_info=True)
+        if added_memories:
+            logger.info(f"✨ Saved Memory Content: {added_memories}")
+        else:
+            logger.info("🚫 No new memories generated.")
+
+    except Exception as e:
+        logger.error(f"❌ Error saving memory: {e}", exc_info=True)
 
 
 # Agent for researching animal facts from internal and external sources.
@@ -92,12 +94,19 @@ comprehensive_researcher = Agent(
     2. A tool for google search for general knowledge (facts, lifespan, diet, habitat).
 
     First, analyze the user's PROMPT.
-    - If the prompt can be answered by only one tool, use that tool.
-    - If the prompt is complex and requires information from both the zoo's database AND google search,
-      you MUST use them sequentially. First, use the zoo's database to get internal information.
-      Once you have the result, THEN use google search for general knowledge.
-      DO NOT call both tools at the same time.
-    - Synthesize the results from the tool(s) you use into preliminary data outputs.
+    - Check if the requested animal exists in our zoo using the zoo database tool FIRST.
+    - If the animal exists in the zoo:
+        - Get the internal data (names, ages, locations).
+        - Then, use google search for general knowledge if needed.
+        - Synthesize the results.
+    - If the animal DOES NOT exist in the zoo:
+        - Explicitly state that "This animal is currently not in our zoo, so I cannot provide information about it."
+        - DO NOT provide general information or use google search for animals not in the zoo.
+    
+    PROMPT:
+    {{ PROMPT }}
+        
+    You MUST prioritize the zoo's internal data. Only provide information for animals present in the zoo.
     """,
     tools=[mcp_tools, GoogleSearchTool(bypass_multi_tools_limit=True)],
     output_key="research_data",  # A key to store the combined findings
@@ -117,6 +126,9 @@ response_formatter = Agent(
     - Then, add the interesting general facts from the research.
     - If some information is missing, just present the information you have.
     - Be conversational and engaging.
+
+    All responses must be in Korean.
+    You MUST only provide information about animals currently in our zoo, as known through the zoo_animal_mcp_server.
 
     RESEARCH_DATA:
     {{ research_data }}
@@ -154,6 +166,8 @@ root_agent = Agent(
     1. If the user asks for 'knowledge' such as animal ecology, information, or location, call 'zoo_concierge_agent'.
     2. If the user asks about animal shows or reservations of shows, call 'zoo_show_agent'.
     3. If the user simply greets or is ambiguous, greet them kindly and ask how you can help.
+
+    All responses must be in Korean.
     """,
     before_model_callback=log_query_to_model,
     after_model_callback=log_model_response,

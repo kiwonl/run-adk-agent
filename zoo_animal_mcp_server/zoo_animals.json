@@ -262,5 +262,157 @@
         "age": 9,
         "enclosure": "The Walrus Cove",
         "trail": "Polar Path"
+    },
+    {
+        "species": "crocodile",
+        "species_kr": "악어",
+        "name": "Snappy",
+        "age": 12,
+        "enclosure": "The Reptile House",
+        "trail": "Jungle Trek"
+    },
+    {
+        "species": "crocodile",
+        "species_kr": "악어",
+        "name": "Crunch",
+        "age": 15,
+        "enclosure": "The Reptile House",
+        "trail": "Jungle Trek"
+    },
+    {
+        "species": "crocodile",
+        "species_kr": "악어",
+        "name": "Jaw",
+        "age": 9,
+        "enclosure": "The Reptile House",
+        "trail": "Jungle Trek"
+    },
+    {
+        "species": "deer",
+        "species_kr": "사슴",
+        "name": "Bambi",
+        "age": 3,
+        "enclosure": "The Forest Glade",
+        "trail": "Woodland Walk"
+    },
+    {
+        "species": "deer",
+        "species_kr": "사슴",
+        "name": "Fawn",
+        "age": 2,
+        "enclosure": "The Forest Glade",
+        "trail": "Woodland Walk"
+    },
+    {
+        "species": "deer",
+        "species_kr": "사슴",
+        "name": "Buck",
+        "age": 5,
+        "enclosure": "The Forest Glade",
+        "trail": "Woodland Walk"
+    },
+    {
+        "species": "rabbit",
+        "species_kr": "토끼",
+        "name": "Thumper",
+        "age": 2,
+        "enclosure": "The Petting Zoo",
+        "trail": "Kids Corner"
+    },
+    {
+        "species": "rabbit",
+        "species_kr": "토끼",
+        "name": "Cottontail",
+        "age": 1,
+        "enclosure": "The Petting Zoo",
+        "trail": "Kids Corner"
+    },
+    {
+        "species": "rabbit",
+        "species_kr": "토끼",
+        "name": "Snowball",
+        "age": 3,
+        "enclosure": "The Petting Zoo",
+        "trail": "Kids Corner"
+    },
+    {
+        "species": "rabbit",
+        "species_kr": "토끼",
+        "name": "Bugs",
+        "age": 4,
+        "enclosure": "The Petting Zoo",
+        "trail": "Kids Corner"
+    },
+    {
+        "species": "zebra",
+        "species_kr": "얼룩말",
+        "name": "Stripes",
+        "age": 5,
+        "enclosure": "The Tall Grass Plains",
+        "trail": "Savannah Heights"
+    },
+    {
+        "species": "zebra",
+        "species_kr": "얼룩말",
+        "name": "Ziggy",
+        "age": 4,
+        "enclosure": "The Tall Grass Plains",
+        "trail": "Savannah Heights"
+    },
+    {
+        "species": "zebra",
+        "species_kr": "얼룩말",
+        "name": "Marty",
+        "age": 6,
+        "enclosure": "The Tall Grass Plains",
+        "trail": "Savannah Heights"
+    },
+    {
+        "species": "monkey",
+        "species_kr": "원숭이",
+        "name": "George",
+        "age": 4,
+        "enclosure": "The Primate Palace",
+        "trail": "Jungle Trek"
+    },
+    {
+        "species": "monkey",
+        "species_kr": "원숭이",
+        "name": "Abu",
+        "age": 3,
+        "enclosure": "The Primate Palace",
+        "trail": "Jungle Trek"
+    },
+    {
+        "species": "monkey",
+        "species_kr": "원숭이",
+        "name": "Coco",
+        "age": 5,
+        "enclosure": "The Primate Palace",
+        "trail": "Jungle Trek"
+    },
+    {
+        "species": "monkey",
+        "species_kr": "원숭이",
+        "name": "Banana",
+        "age": 2,
+        "enclosure": "The Primate Palace",
+        "trail": "Jungle Trek"
+    },
+    {
+        "species": "tiger",
+        "species_kr": "호랑이",
+        "name": "Shere Khan",
+        "age": 8,
+        "enclosure": "The Big Cat Plains",
+        "trail": "Savannah Heights"
+    },
+    {
+        "species": "tiger",
+        "species_kr": "호랑이",
+        "name": "Tigger",
+        "age": 5,
+        "enclosure": "The Big Cat Plains",
+        "trail": "Savannah Heights"
     }
 ]
