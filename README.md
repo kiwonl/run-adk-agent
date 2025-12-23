@@ -1,27 +1,52 @@
-# AI 에이전트 인프라 설정
+# AI Agent Infrastructure on Google Cloud Run
 
-## 개요
+## 🌟 Overview
 
-이 프로젝트는 Google Cloud에 정교한 AI 에이전트를 배포하기 위한 포괄적인 설정을 제공합니다. 이 에이전트는 가상의 동물원의 동물에 대한 질문에 답할 수 있는 "동물원 투어 가이드"로 설계되었습니다. 동물원 특정 데이터에는 자체 구축한 MCP(Multi-turn Conversation Platform) 서버를 활용하고, 일반 지식에는 위키백과를 활용합니다. 전체 인프라는 Terraform을 사용하여 관리되며, 에이전트는 Cloud Run에 배포됩니다.
+This project provides a comprehensive setup for deploying sophisticated, multi-agent AI systems on Google Cloud Platform (GCP). It demonstrates a real-world use case: a **Zoo Concierge System** designed to assist visitors with animal information and show bookings.
+
+The architecture leverages cutting-edge technologies to create a scalable and secure agent ecosystem:
+*   **zoo_concierge_agent**: The main entry point for users. It handles general inquiries using a "Researcher" sub-agent (connected to an MCP server for zoo data and Google Search for general facts) and routes booking requests to a specialized agent.
+*   **zoo_show_agent**: A specialized agent dedicated to managing show schedules and reservations. It communicates with the main agent via the **A2A (Agent-to-Agent)** protocol.
+*   **MCP Servers**: Two custom **Model Context Protocol (MCP)** servers (`zoo_animal_mcp_server` and `zoo_show_mcp_server`) provide structured access to proprietary zoo data, decoupled from the agent logic.
+
+The entire infrastructure is provisioned using **Terraform**, ensuring a secure, production-ready environment with VPCs, private networking, and IAM policies, all deployed on **Google Cloud Run**.
 
 ![ai-agent-design](./images/ai-agent-design.png)
 
-## 시작하기
+## 🚀 Key Technologies
 
-## Terraform을 통한 인프라 설정
+*   **Google Cloud Run**: A fully managed serverless platform for deploying highly scalable containerized applications.
+*   **Model Context Protocol (MCP)**: An open standard that enables AI models to securely connect to external data sources and tools.
+*   **Google ADK (Agent Development Kit)**: A Python framework for building, testing, and deploying GenAI agents.
+*   **A2A (Agent-to-Agent) Protocol**: A mechanism allowing independent agents to discover and interact with each other to solve complex tasks collaboratively.
+*   **Terraform**: Infrastructure as Code (IaC) tool to define and provision the cloud resources consistently.
 
-1.  **환경 변수 설정:**
+---
 
-    다음 지침은 `run-ai-apps` 디렉터리의 루트에서 시작한다고 가정합니다.
+## 🛠️ Getting Started
+
+### Prerequisites
+*   Google Cloud Platform (GCP) Project
+*   `gcloud` CLI installed and authenticated
+*   `terraform` installed
+*   Python 3.10+
+
+### 1. Infrastructure Setup with Terraform
+
+1.  **Set Environment Variables:**
+    Start from the root of the `run-adk-agent` directory.
+    
+    ```bash
+    cd run-adk-agent
+    ```
 
     ```bash
-    cd ~/run-adk-agent
-
     export PROJECT_ID=<your-gcp-project-id>
     export REGION=us-central1
     ```
 
-2.  **`terraform.tfvars` 업데이트:**
+2.  **Update `terraform.tfvars`:**
+    This automatically injects your project details into the Terraform configuration.
 
     ```bash
     sed -i \
@@ -30,70 +55,65 @@
     ./terraform/terraform.tfvars
     ```
 
-3.  **Terraform 초기화 및 적용:**
+3.  **Initialize and Apply Terraform:**
 
-    -chdir : terraform 폴더에 있는 것 처럼 동작해라.
     ```bash
     terraform -chdir=terraform init
     terraform -chdir=terraform plan
     terraform -chdir=terraform apply --auto-approve
     ```
 
-    출력 결과(Outputs)를 기록해 두세요.
-    ```
-    Outputs:
-
+    **📝 Note the Outputs:** You will need these values for the next steps.
+    ```text
     network_name = "run-ai-apps-network"
     subnetwork_name = "run-ai-apps-subnet"
     service_account_account_id = "run-ai-apps-sa"
     ```
 
-### Cloud Run에 애플리케이션 배포
+### 2. Application Deployment to Cloud Run
 
-1.  **Terraform 출력에서 환경 변수 설정:**
+1.  **Configure Deployment Environment:**
 
     ```bash
-    # Terraform 으로 생성된 리소스의 이름을 정의
+    # Define resources from Terraform outputs
     export NETWORK_NAME=run-ai-apps-network
     export SUBNET_NAME=run-ai-apps-subnet
     export SERVICE_ACCOUNT=run-ai-apps-sa
 
-    # 사용자의 GCP 사용자 이름, `gcloud auth list`를 통해 확인할 수 있습니다.
-    export MEMBER=<your-gcp-user-name>
-    export PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format="value(projectNumber)")  
+    # User configuration
+    export MEMBER=$(gcloud config get-value account)
+    export PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format="value(projectNumber)")
 
-    # 사용할 AI Model 정의 (gemini-3-pro-preview)
+    # AI Model configuration
     export GEMINI_MODEL=gemini-2.5-flash
     ```
 
-2.  **배포자 권한 부여 (귀하의 계정에 대한 일회성 설정):**
-
-    `gcloud run deploy`를 실행하는 사용자 계정은 서비스를 배포하고, 서비스 계정을 할당하고, 백그라운드에서 Cloud Build를 사용하기 위한 권한이 필요합니다. 현재 로그인된 `gcloud` 사용자에게 이러한 역할을 부여하려면 다음 명령어를 실행하십시오.
+2.  **Grant Deployer Permissions (One-time Setup):**
+    Ensure your user account has the necessary permissions to build and deploy to Cloud Run.
 
     ```bash
-    # Cloud Run 서비스 배포 및 관리를 위한 권한 부여
+    # Grant Cloud Run Admin role
     gcloud projects add-iam-policy-binding $PROJECT_ID \
         --member="user:$MEMBER" \
         --role="roles/run.admin"
 
-    # 서비스 계정을 Cloud Run 서비스와 연결하기 위한 권한 부여
+    # Grant Service Account User role
     gcloud projects add-iam-policy-binding $PROJECT_ID \
         --member="user:$MEMBER" \
         --role="roles/iam.serviceAccountUser"
 
-    # 업로드된 소스 코드로부터 빌드를 트리거하기 위한 권한 부여
+    # Grant Cloud Build Editor role
     gcloud projects add-iam-policy-binding $PROJECT_ID \
         --member="user:$MEMBER" \
         --role="roles/cloudbuild.builds.editor"
     ```
 
-3.  **Zoo Animal MCP 서버 배포:**
+3.  **Deploy MCP Servers:**
 
-    이 명령어는 소스 코드로부터 컨테이너 이미지를 빌드하고 Cloud Run에 배포합니다.
-
+    **Deploy Zoo Animal MCP Server:**
     ```bash
     gcloud run deploy zoo-animal-mcp-server \
-        --source ./zoo_aminal_mcp_server/ \
+        --source ./zoo_animal_mcp_server/ \
         --region ${REGION} \
         --service-account ${SERVICE_ACCOUNT} \
         --no-allow-unauthenticated \
@@ -103,10 +123,7 @@
         --ingress internal
     ```
 
-4.  **Zoo Show MCP 서버 배포:**
-
-    이 명령어는 소스 코드로부터 컨테이너 이미지를 빌드하고 Cloud Run에 배포합니다.
-
+    **Deploy Zoo Show MCP Server:**
     ```bash
     gcloud run deploy zoo-show-mcp-server \
         --source ./zoo_show_mcp_server/ \
@@ -119,31 +136,38 @@
         --ingress internal
     ```
 
-4.  **.env 파일 업데이트:**
+4.  **Configure Agent Environment (.env):**
+    The agents need to know where the MCP servers are located.
+
     ```bash
-    echo -e "\nMCP_SERVER_URL=https://zoo-animal-mcp-server-${PROJECT_NUMBER}.${REGION}.run.app/mcp/" >> ./zoo_aminal_mcp_server/.env    
-    echo -e "\nMCP_SERVER_URL=https://zoo-show-mcp-server-${PROJECT_NUMBER}.${REGION}.run.app/mcp/" >> ./zoo_show_mcp_server/.env
+    # Create .env for Concierge Agent (connects to Animal MCP)
+    echo "MCP_SERVER_URL=https://zoo-animal-mcp-server-${PROJECT_NUMBER}.${REGION}.run.app/mcp" >> ./zoo_concierge_agent/.env
+
+    # Create .env for Show Agent (connects to Show MCP)
+    echo "MCP_SERVER_URL=https://zoo-show-mcp-server-${PROJECT_NUMBER}.${REGION}.run.app/mcp" >> ./zoo_show_agent/.env
     ```
 
-5.  **로컬 환경에 Google ADK 설치:**
+5.  **Install Google ADK:**
 
-    참조: [ADK 설치 가이드](https://google.github.io/adk-docs/get-started/installation/)
+    Reference: [ADK Installation Guide](https://google.github.io/adk-docs/get-started/installation/)
     ```bash
     python3 -m venv .venv
     source .venv/bin/activate
     pip install google-adk
     ```
 
-6.  **Zoo_shot_agconcierge_agent 배포:**
+6.  **Deploy Zoo Show Agent (A2A Target):**
 
-    `Allow unauthenticated invocations to [zoo-tour-guide] (y/N)?` 메시지가 나타나면 `y`를 입력하십시오.
+    This agent handles the specialized task of booking shows.
+    *   Type `y` when asked `Allow unauthenticated invocations to [zoo-show-agent] (y/N)?`
+
     ```bash
     adk deploy cloud_run \
       --project=${PROJECT_ID} \
       --region=${REGION} \
       --service_name=zoo-show-agent \
-      --with_ui \
       --a2a \
+      --artifact_service_uri=memory:// \
       ./zoo_show_agent \
       -- --allow-unauthenticated \
       --service-account ${SERVICE_ACCOUNT} \
@@ -152,55 +176,67 @@
       --vpc-egress=all-traffic
     ```
 
-4.  **.env 파일 업데이트:**
+7.  **Connect Agents:**
+    Update the `zoo_concierge_agent` configuration to point to the deployed `zoo_show_agent` using the A2A protocol.
+
+    ```bash    
+    cp ./zoo_show_agent/agent.json ./zoo_concierge_agent/agent.json
+    ```
     ```bash
-    cp ./zoo_show_agent/agent.py ./zoo_concierge_agent/agent.py           
-    sed -i -e "s/your_agent_server_url/https://zoo-show-agent-${PROJECT_NUMBER}.${REGION}.run.app/" ./zoo_show_agent/agent.json
+    # Update the Agent Card with the deployed URL
+    sed -i -e "s|your_agent_server_url|https://zoo-show-agent-${PROJECT_NUMBER}.${REGION}.run.ap/a2a/zoo_show_agent"|" ./zoo_concierge_agent/agent.json
     ```
 
-7.  **Zoo_concierge_agent 배포:**
+8.  **Deploy Zoo Concierge Agent (Main Entry):**
 
-    `Allow unauthenticated invocations to [zoo-tour-guide] (y/N)?` 메시지가 나타나면 `y`를 입력하십시오.
+    This is the main agent users interact with.
+    *   Type `y` when asked `Allow unauthenticated invocations to [zoo-concierge-agent] (y/N)?`
+
     ```bash
     adk deploy cloud_run \
       --project=${PROJECT_ID} \
       --region=${REGION} \
       --service_name=zoo-concierge-agent \
       --with_ui \
+      --artifact_service_uri=memory:// \
       ./zoo_concierge_agent \
       -- --allow-unauthenticated \
       --service-account ${SERVICE_ACCOUNT} \
       --network=${NETWORK_NAME} \
       --subnet=${SUBNET_NAME}  \
       --vpc-egress=all-traffic
-
     ```
 
+## 🎮 Usage
 
-## 사용법
-자세한 사용법은 다음 코드랩을 참조하십시오:
-https://codelabs.developers.google.com/codelabs/cloud-run/use-mcp-server-on-cloud-run-with-an-adk-agent#8
+Once deployed, you can access the **Zoo Concierge Agent** via the URL provided by the `adk deploy` command. The interface allows you to ask questions about animals or request show bookings.
+
+For a guided walkthrough, refer to the codelab:
+[Use MCP Server on Cloud Run with an ADK Agent](https://codelabs.developers.google.com/codelabs/cloud-run/use-mcp-server-on-cloud-run-with-an-adk-agent#8)
 
 ![AI Agent UI](./images/ai-agent-result.png)
 
-## AI 에이전트 소스 코드 참조 
+## 📚 References & Resources
 
-- [MCP 서버 코드랩](https://codelabs.developers.google.com/codelabs/cloud-run/how-to-deploy-a-secure-mcp-server-on-cloud-run?hl=ko#6)
-- [AI 에이전트 코드랩](https://codelabs.developers.google.com/codelabs/cloud-run/use-mcp-server-on-cloud-run-with-an-adk-agent?hl=ko#0)
+-   **Codelab: Secure MCP Server on Cloud Run:** [Link](https://codelabs.developers.google.com/codelabs/cloud-run/how-to-deploy-a-secure-mcp-server-on-cloud-run?hl=ko#6)
+-   **Codelab: ADK Agent with MCP:** [Link](https://codelabs.developers.google.com/codelabs/cloud-run/use-mcp-server-on-cloud-run-with-an-adk-agent?hl=ko#0)
 
-## Terraform 리소스
+### Terraform Resources Created
 
-`terraform` 디렉터리의 Terraform 스크립트는 다음 Google Cloud 리소스를 생성합니다:
+The `terraform/` directory contains scripts that provision the following:
 
--   **`google_project_service`**: Cloud Run, Vertex AI, Cloud DNS, Service Directory, Cloud Build, Artifact Registry 등 프로젝트에 필요한 Google Cloud API를 활성화합니다.
--   **`google_service_account`**: Cloud Run 서비스가 다른 Google Cloud 서비스와 안전하게 상호 작용할 수 있도록 전용 서비스 계정(`run-ai-apps-sa`)을 생성합니다.
--   **`google_project_iam_member`**: 서비스 계정에 `roles/aiplatform.user` 및 `roles/run.invoker`와 같은 필요한 IAM 역할을 할당하여 다른 Google Cloud 서비스와 상호 작용할 수 있도록 합니다.
--   **`google_compute_network`**: 서비스에 안전하고 격리된 환경을 제공하기 위해 사용자 지정 Virtual Private Cloud (VPC) 네트워크(`run-ai-apps-network`)를 생성합니다.
--   **`google_compute_subnetwork`**: VPC 내에 서브네트워크(`run-ai-apps-subnet`)를 생성합니다.
--   **`google_compute_router`**: VPC 네트워크의 동적 라우팅을 관리하기 위해 Cloud Router를 생성합니다.
--   **`google_compute_router_nat`**: 외부 IP 주소가 없는 인스턴스가 인터넷에 액세스할 수 있도록 Cloud NAT 게이트웨이를 생성합니다.
--   **`google_compute_global_address`**: Private Service Connect (PSC)를 위해 전역 내부 IP 주소를 예약하여 Google API에 대한 비공개 액세스를 활성화합니다.
--   **`google_compute_global_forwarding_rule`**: PSC를 통해 예약된 IP 주소에서 Google API로 트래픽을 전달하는 전달 규칙을 생성합니다.
--   **`google_dns_managed_zone`**: `googleapis.com`에 대한 비공개 DNS 영역을 생성하여 Google API 도메인 이름을 PSC 엔드포인트로 확인(resolve)합니다.
--   **`google_dns_record_set`**: 비공개 영역 내에 PSC 엔드포인트를 가리키는 DNS 레코드를 생성합니다.
-    <BR><BR><img src="./images/terraform.png" width="800">
+-   **Networking:**
+    -   `google_compute_network`: A custom VPC (`run-ai-apps-network`) for isolation.
+    -   `google_compute_subnetwork`: A subnet (`run-ai-apps-subnet`) for the resources.
+    -   `google_compute_router` & `google_compute_router_nat`: Cloud Router and NAT for secure outbound internet access without external IPs.
+-   **Security & IAM:**
+    -   `google_service_account`: A dedicated identity (`run-ai-apps-sa`) for the agents.
+    -   `google_project_iam_member`: Granular permissions (Vertex AI User, Cloud Run Invoker) assigned to the service account.
+-   **Private Connectivity:**
+    -   `google_compute_global_address` & `google_compute_global_forwarding_rule`: Setup for Private Service Connect (PSC).
+    -   `google_dns_managed_zone` & `google_dns_record_set`: Private DNS to route Google API traffic securely via PSC.
+-   **Services:**
+    -   `google_project_service`: Enables necessary APIs (Cloud Run, Vertex AI, Cloud Build, etc.).
+
+<br>
+<img src="./images/terraform.png" width="800" alt="Terraform Resource Diagram">

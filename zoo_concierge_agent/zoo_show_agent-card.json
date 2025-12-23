@@ -1,0 +1,26 @@
+// https://a2a-protocol.org/latest/topics/agent-discovery/#the-role-of-the-agent-card
+{
+  "capabilities": {},
+  "defaultInputModes": ["text/plain"],
+  "defaultOutputModes": ["text/plain"],
+  "description": "An agent that helps users find and book zoo shows.",
+  "name": "zoo_show_agent",
+  "skills": [
+    {
+      "id": "consult_reservation",
+      "name": "consult_reservation",
+      "description": "Helps users find interesting animal shows by providing details like schedule, description, and location, and also facilitates booking reservations for these shows.",
+      "tags": [
+        "zoo",
+        "shows",
+        "booking",
+        "reservations",
+        "schedule",
+        "tickets"
+      ]
+    }
+  ],
+  // https://illustration-agent-Project Number.GCP_LOCATION.run.app/a2a/illustration_agent
+  "url": "https://zoo-show-agent-532522820998.us-central1.run.app/a2a/zoo_show_agent",
+  "version": "1.0.0"
+}

@@ -1,14 +1,13 @@
-# https://a2a-protocol.org/latest/topics/agent-discovery/#the-role-of-the-agent-card
-{
-  "capabilities": {},
+{  
+  "name": "zoo_show_agent",
+  "description": "An agent that helps users find and book zoo shows.",
   "defaultInputModes": ["text/plain"],
   "defaultOutputModes": ["text/plain"],
-  "description": "An agent that helps users find and book zoo shows.",
-  "name": "zoo_show_agent",
+  "capabilities": {},
   "skills": [
     {
-      "id": "consult_reservation",
-      "name": "consult_reservation",
+      "id": "zoo_show",
+      "name": "zoo_show",
       "description": "Helps users find interesting animal shows by providing details like schedule, description, and location, and also facilitates booking reservations for these shows.",
       "tags": [
         "zoo",
@@ -19,27 +18,7 @@
         "tickets"
       ]
     }
-  ],
+  ],  
   "url": "your_agent_server_url",
   "version": "1.0.0"
 }
-
-
-
-// {
-//     "name": "illustration_agent",
-//     "description": "An agent designed to generate branded illustrations for Cymbal Stadiums.",
-//     "defaultInputModes": ["text/plain"],
-//     "defaultOutputModes": ["application/json"],
-//     "skills": [
-//     {
-//         "id": "illustrate_text",
-//         "name": "Illustrate Text",
-//         "description": "Generate an illustration to illustrate the meaning of provided text.",
-//         "tags": ["illustration", "image generation"]
-//     }
-//     ],
-//     "url": "https://illustration-agent-948391265020.us-west1.run.app/a2a/illustration_agent",
-//     "capabilities": {},
-//     "version": "1.0.0"
-// }

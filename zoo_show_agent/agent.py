@@ -8,6 +8,7 @@ from google.adk.tools.mcp_tool.mcp_toolset import (
     MCPToolset,
     StreamableHTTPConnectionParams,
 )
+from a2a.types import AgentCapabilities, AgentCard, AgentSkill
 
 import google.auth
 import google.auth.transport.requests
@@ -32,7 +33,7 @@ if not mcp_server_url:
 def get_id_token():
     """Get an ID token to authenticate with the MCP server."""
     target_url = os.getenv("MCP_SERVER_URL")
-    audience = target_url.split("/mcp/")[0]
+    audience = target_url.split("/mcp")[0]
     request = google.auth.transport.requests.Request()
     id_token = google.oauth2.id_token.fetch_id_token(request, audience)
     return id_token
