@@ -1,4 +1,3 @@
-
 import os
 import logging
 import google.cloud.logging
@@ -9,15 +8,16 @@ from google.adk.tools.mcp_tool.mcp_toolset import (
     MCPToolset,
     StreamableHTTPConnectionParams,
 )
-from a2a.types import AgentCapabilities, AgentCard, AgentSkill
-
 import google.auth
 import google.auth.transport.requests
 import google.oauth2.id_token
 
+from .callback_logging import log_query_to_model, log_model_response
+
 # Setup Logging
 google.cloud.logging.Client().setup_logging()
 logger = logging.getLogger(__name__)
+logging.basicConfig(format="[%(levelname)s]: %(message)s", level=logging.INFO)
 
 # Setup Environment
 load_dotenv()
@@ -33,8 +33,9 @@ def get_id_token():
     audience = target_url.split("/mcp")[0]
     request = google.auth.transport.requests.Request()
     id_token = google.oauth2.id_token.fetch_id_token(request, audience)
-    return id_token
 
+    logger.info("🔑 Successfully generated ID token.")
+    return id_token
 
 
 # Configures MCPToolset for the show data server.
@@ -46,12 +47,6 @@ mcp_tools = MCPToolset(
         },
     ),
 )
-
-
-# Tool for reserving tickets for a specific zoo show.
-def reserve_show(show_name: str, count: int) -> str:
-    # In a real app, this would call a backend API or database.
-    return f"Reservation confirmed: {count} tickets for '{show_name}'."
 
 
 # Root agent for handling show inquiries and bookings.
@@ -86,5 +81,7 @@ root_agent = Agent(
     **Tone:**
     - Helpful, enthusiastic, and polite.
     """,
-    tools=[reserve_show, mcp_tools],
+    tools=[mcp_tools],
+    before_model_callback=log_query_to_model,
+    after_model_callback=log_model_response,
 )

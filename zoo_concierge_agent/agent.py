@@ -25,6 +25,7 @@ from .callback_logging import log_query_to_model, log_model_response
 # Setup Logging
 google.cloud.logging.Client().setup_logging()
 logger = logging.getLogger(__name__)
+logging.basicConfig(format="[%(levelname)s]: %(message)s", level=logging.INFO)
 
 # Setup Environment
 load_dotenv()
@@ -39,6 +40,7 @@ def get_id_token():
     audience = mcp_server_url.split("/mcp")[0]
     request = google.auth.transport.requests.Request()
     id_token = google.oauth2.id_token.fetch_id_token(request, audience)
+    logger.info("🔑 Successfully generated ID token.")
     return id_token
 
 
@@ -161,7 +163,13 @@ root_agent = Agent(
     model=model_name,
     description="The main guide for the zoo. Calls the appropriate expert based on the user's intent.",
     instruction="""
-    You are the zoo concierge. Analyze the user's input and forward it to the appropriate agent among the following:
+    You are the zoo concierge.
+
+    **CRITICAL STEP:**
+    Before routing the request, you MUST FIRST use the `add_prompt_to_state` tool to save the user's input.
+    Pass the user's exact input as the `prompt` argument.
+
+    Then, analyze the input and forward it to the appropriate agent:
 
     1. If the user asks for 'knowledge' such as animal ecology, information, or location, call 'zoo_concierge_agent'.
     2. If the user asks about animal shows or reservations of shows, call 'zoo_show_agent'.

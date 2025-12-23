@@ -5,6 +5,7 @@
 이 프로젝트는 Google Cloud Platform(GCP)에서 정교한 멀티 에이전트 AI 시스템을 배포하기 위한 포괄적인 구성을 제공합니다. 방문객에게 동물 정보 제공 및 쇼 예약 서비스를 지원하는 **동물원 컨시어지 시스템(Zoo Concierge System)**이라는 실제 사용 사례를 통해 이를 시연합니다.
 
 이 아키텍처는 최신 기술을 활용하여 확장 가능하고 안전한 에이전트 생태계를 구축합니다.
+
 *   **zoo_concierge_agent**: 사용자의 주요 진입점입니다. "연구원(Researcher)" 하위 에이전트(동물원 데이터를 위한 MCP 서버 및 일반 사실 정보를 위한 Google 검색과 연결됨)를 사용하여 일반적인 문의를 처리하고, 예약 요청은 전문 에이전트로 라우팅합니다.
 *   **zoo_show_agent**: 쇼 일정 및 예약 관리를 전담하는 전문 에이전트입니다. **A2A(Agent-to-Agent)** 프로토콜을 통해 메인 에이전트와 통신합니다.
 *   **MCP 서버**: 두 개의 커스텀 **Model Context Protocol (MCP)** 서버(`zoo_animal_mcp_server` 및 `zoo_show_mcp_server`)는 에이전트 로직과 분리된 고유 동물원 데이터에 대한 구조화된 액세스를 제공합니다.
@@ -86,8 +87,10 @@
     
     ```
 
-2.  **배포자 권한 부여 (일회성 설정):**
-    사용자 계정에 Cloud Run에 빌드 및 배포할 수 있는 필요한 권한이 있는지 확인합니다.
+2.  **배포자 권한 부여:**
+
+    실제 Cloud Run 에서 사용할 SA 생성과 SA 에 필요한 권한 부여는 Terraform 에서 이미 수행했습니다. 
+    이 작업은 실제 환경 구성할때 필요한 권한을 현재 작업자가 사용하는 계정 (예를 들어 Qwiklab user 계정) 에 부여하는 작업입니다.
 
     ```bash
     # Cloud Run 관리자 역할 부여
@@ -118,37 +121,37 @@
 ### MemoryBank 사용을 위한 AgentEngine 생성
 Agent Engine을 프로비저닝하거나 삭제하는 스크립트도 이제 커맨드라인 인자를 통해 필요한 정보를 전달받습니다.
 
-1. 프로비저닝 스크립트 실행 (`provisioning.py`)
+1.  **프로비저닝 스크립트 실행 (`provisioning.py`):**
 
-Agent Engine을 새로 생성할 때 사용합니다.
+    Agent Engine을 새로 생성할 때 사용합니다.
 
-```bash
-python3 ./agentengine/provisioning.py \
-  --project_id ${PROJECT_ID} \
-  --location ${LOCATION} \
-  --agent_name ${AGENT_NAME} \
-  --model ${GEMINI_MODEL}
-```
+    ```bash
+    python3 ./agentengine/provisioning.py \
+      --project_id ${PROJECT_ID} \
+      --location ${LOCATION} \
+      --agent_name ${AGENT_NAME} \
+      --model ${GEMINI_MODEL}
+    ```
 
-나온 결과값을 AGENT_ENGINE_ID 에 설정
-```bash
-export AGENT_ENGINE_ID=1348944636630007808
-```
+    나온 결과값을 `AGENT_ENGINE_ID` 에 설정합니다.
+    ```bash
+    export AGENT_ENGINE_ID=1348944636630007808
+    ```
 
-Optional. 삭제 스크립트 실행 (`cleaning.py`)
+2.  **(Optional) 삭제 스크립트 실행 (`cleaning.py`):**
 
-기존에 생성된 Agent Engine을 삭제할 때 사용합니다.
+    기존에 생성된 Agent Engine을 삭제할 때 사용합니다.
 
-```bash
-python3 ./agentengine/cleaning.py \
-  --project_id ${PROJECT_ID} \
-  --location ${LOCATION} \
-  --agent_engine_id ${AGENT_ENGINE_ID}
-```
+    ```bash
+    python3 ./agentengine/cleaning.py \
+      --project_id ${PROJECT_ID} \
+      --location ${LOCATION} \
+      --agent_engine_id ${AGENT_ENGINE_ID}
+    ```
 
 ### Cloud Run 에 MCP Server 배포
 
-1. **Zoo Animal MCP 서버 배포:**
+1.  **Zoo Animal MCP 서버 배포:**
     ```bash
     gcloud run deploy zoo-animal-mcp-server \
         --source ./zoo_animal_mcp_server/ \
@@ -161,7 +164,7 @@ python3 ./agentengine/cleaning.py \
         --ingress internal
     ```
 
-2. **Zoo Show MCP 서버 배포:**
+2.  **Zoo Show MCP 서버 배포:**
     ```bash
     gcloud run deploy zoo-show-mcp-server \
         --source ./zoo_show_mcp_server/ \
@@ -191,8 +194,7 @@ python3 ./agentengine/cleaning.py \
 
 ### Cloud Run 에 ADK Agent 배포
 
-
-6.  **Zoo Show Agent 배포 (A2A 대상):**
+1.  **Zoo Show Agent 배포 (A2A 대상):**
     이 에이전트는 쇼 예약이라는 전문 작업을 처리합니다.
 
     ```bash
@@ -210,7 +212,7 @@ python3 ./agentengine/cleaning.py \
       --vpc-egress=all-traffic
     ```
 
-7.  **에이전트 연결:**
+2.  **에이전트 연결:**
     A2A 프로토콜을 사용하여 배포된 `zoo_show_agent`를 가리키도록 `zoo_concierge_agent` 구성을 업데이트합니다.
 
     ```bash    
@@ -221,7 +223,7 @@ python3 ./agentengine/cleaning.py \
     sed -i -e "s|your_agent_server_url|https://zoo-show-agent-${PROJECT_NUMBER}.${LOCATION}.run.app/a2a/zoo_show_agent|" ./zoo_concierge_agent/agent.json
     ```
 
-8.  **Zoo Concierge Agent 배포 (메인 진입점):**
+3.  **Zoo Concierge Agent 배포 (메인 진입점):**
 
     사용자가 상호 작용하는 메인 에이전트입니다.
     *   `Allow unauthenticated invocations to [zoo-concierge-agent] (y/N)?` 질문에 `y`를 입력하세요.

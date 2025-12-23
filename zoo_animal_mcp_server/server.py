@@ -7,6 +7,7 @@ from typing import List, Dict, Any
 from fastmcp import FastMCP
 
 logger = logging.getLogger(__name__)
+logging.basicConfig(format="[%(levelname)s]: %(message)s", level=logging.INFO)
 
 # Initialize FastMCP server for zoo animal data.
 mcp = FastMCP("Zoo Animal MCP Server 🦁🐧🐻")
