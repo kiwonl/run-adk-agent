@@ -4,11 +4,14 @@ import os
 
 import json
 from typing import List, Dict, Any, Optional
+
+
 from fastmcp import FastMCP
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(format="[%(levelname)s]: %(message)s", level=logging.INFO)
 
+# Initialize FastMCP server for zoo show data.
 mcp = FastMCP("Zoo Show MCP Server 🎟️")
 
 # Global Data Stores
@@ -16,6 +19,7 @@ ZOO_SHOWS: List[Dict[str, Any]] = []
 ZOO_SHOWS_BY_NAME: Dict[str, Dict[str, Any]] = {}
 
 
+# Loads show data from a JSON file and creates an in-memory index.
 def load_show_data():
     """Loads zoo show data from JSON and builds indexes."""
     global ZOO_SHOWS, ZOO_SHOWS_BY_NAME
@@ -46,15 +50,7 @@ load_show_data()
 
 @mcp.tool()
 def get_shows_by_animal(animal_name: str) -> List[Dict[str, Any]]:
-    """
-    Filters shows based on the animal name mentioned in the show's name or description.
-
-    Args:
-        animal_name: The name of the animal to filter by (e.g., 'lion', 'penguin').
-
-    Returns:
-        A list of dictionaries, each representing a show that involves the specified animal.
-    """
+    # MCP tool to filter shows based on animal name.
     logger.info(f">>> 🛠️ Tool: 'filter_shows_by_animal' called for '{animal_name}'")
     animal_lower = animal_name.lower()
     return [
@@ -68,20 +64,12 @@ def get_shows_by_animal(animal_name: str) -> List[Dict[str, Any]]:
 
 @mcp.tool()
 def get_show_details(name: str) -> Optional[Dict[str, Any]]:
-    """
-    Retrieves the details of a specific show by its name.
-
-    Args:
-        name: The name of the show.
-
-    Returns:
-        A dictionary with the show's details (show_id, name, time, duration, price, description, location)
-        or None if the show is not found.
-    """
+    # MCP tool to retrieve details of a specific show by name.
     logger.info(f">>> 🛠️ Tool: 'get_show_details' called for '{name}'")
     return ZOO_SHOWS_BY_NAME.get(name.lower())
 
 
+# Entry point for running the MCP server.
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8080))
     logger.info(f"🚀 MCP server started on port {port}")

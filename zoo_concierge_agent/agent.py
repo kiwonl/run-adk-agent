@@ -1,3 +1,4 @@
+
 import os
 import logging
 from dotenv import load_dotenv
@@ -10,34 +11,39 @@ import google.oauth2.id_token
 from google.adk import Agent
 from google.adk.agents import SequentialAgent
 from google.adk.agents.remote_a2a_agent import RemoteA2aAgent
+from google.adk.agents.callback_context import CallbackContext
+
 from google.adk.tools.mcp_tool.mcp_toolset import (
     MCPToolset,
     StreamableHTTPConnectionParams,
 )
 from google.adk.tools.tool_context import ToolContext
 from google.adk.tools.google_search_tool import GoogleSearchTool
+from google.adk.tools.preload_memory_tool import PreloadMemoryTool
 
-# --- Setup Logging and Environment ---
-cloud_logging_client = google.cloud.logging.Client()
-cloud_logging_client.setup_logging()
+from .callback_logging import log_query_to_model, log_model_response
+
+# Setup Logging
+google.cloud.logging.Client().setup_logging()
 logger = logging.getLogger(__name__)
 
+# Setup Environment
 load_dotenv()
-model_name = os.getenv("MODEL", "gemini-2.5-flash")
+model_name = os.getenv("MODEL")
 mcp_server_url = os.getenv("MCP_SERVER_URL")
 if not mcp_server_url:
     raise ValueError("The environment variable MCP_SERVER_URL is not set.")
 
 
+# Helper to generate ID tokens for MCP server authentication.
 def get_id_token():
-    """Get an ID token to authenticate with the MCP server."""
     audience = mcp_server_url.split("/mcp")[0]
     request = google.auth.transport.requests.Request()
     id_token = google.oauth2.id_token.fetch_id_token(request, audience)
     return id_token
 
 
-# MCP Server Tool 설정
+# Configures MCPToolset for the animal data server.
 mcp_tools = MCPToolset(
     connection_params=StreamableHTTPConnectionParams(
         url=mcp_server_url,
@@ -47,16 +53,34 @@ mcp_tools = MCPToolset(
     ),
 )
 
-
-# Greet user and save their prompt
+# Tool to save the initial user prompt to the agent's state.
 def add_prompt_to_state(tool_context: ToolContext, prompt: str) -> dict[str, str]:
-    """Saves the user's initial prompt to the state."""
     tool_context.state["PROMPT"] = prompt
-    logging.info(f"[State updated] Added to PROMPT: {prompt}")
+    logging.info(f"📝 [State updated] Added to PROMPT: {prompt}")
     return {"status": "success"}
 
 
-# 1. Researcher Agent
+# Callback to automatically save the session to memory after agent execution.
+async def auto_save_session_to_memory_callback(callback_context: CallbackContext):
+  try:
+    inv_ctx = getattr(callback_context, "_invocation_context", None)
+    if not inv_ctx or not inv_ctx.memory_service:
+      logger.warning("⚠️ Memory Service not set, skipping memory save.")
+      return
+
+    logger.info(f"💾 Saving session {inv_ctx.session.id} to memory...")
+    added_memories = await inv_ctx.memory_service.add_session_to_memory(inv_ctx.session)
+    
+    if added_memories:
+      logger.info(f"✨ Saved Memory Content: {added_memories}")
+    else:
+      logger.info("🚫 No new memories generated.")
+
+  except Exception as e:
+    logger.error(f"❌ Error saving memory: {e}", exc_info=True)
+
+
+# Agent for researching animal facts from internal and external sources.
 comprehensive_researcher = Agent(
     name="comprehensive_researcher",
     model=model_name,
@@ -79,7 +103,8 @@ comprehensive_researcher = Agent(
     output_key="research_data",  # A key to store the combined findings
 )
 
-# 2. Response Formatter Agent
+
+# Agent for formatting research data into a friendly user response.
 response_formatter = Agent(
     name="response_formatter",
     model=model_name,
@@ -98,7 +123,8 @@ response_formatter = Agent(
     """,
 )
 
-# Sequancial Agent Workflow
+
+# Sequential agent for handling animal information queries.
 zoo_concierge_agent = SequentialAgent(
     name="zoo_concierge_agent",
     description="Handles questions about animal information and knowledge.",
@@ -108,17 +134,16 @@ zoo_concierge_agent = SequentialAgent(
     ],
 )
 
-# Remote Agents by A2A
+# Remote agent for handling show inquiries and bookings via A2A.
 current_dir = os.path.dirname(os.path.abspath(__file__))
-# # zoo_concierge_agent 디렉토리의 상위 디렉토리로 가서 zoo_show_agent 디렉토리로 진입
-agent_card_path = os.path.join(current_dir, "agent.json")
 zoo_show_agent = RemoteA2aAgent(
     name="zoo_show_agent",
     description="Used to check animal show schedules or make show reservations.",
-    agent_card=agent_card_path,
+    agent_card=os.path.join(current_dir, "agent.json"),
 )
 
-# Root Agent
+
+# Root agent for orchestrating overall user interactions and routing.
 root_agent = Agent(
     name="greeter",
     model=model_name,
@@ -130,6 +155,9 @@ root_agent = Agent(
     2. If the user asks about animal shows or reservations of shows, call 'zoo_show_agent'.
     3. If the user simply greets or is ambiguous, greet them kindly and ask how you can help.
     """,
-    tools=[add_prompt_to_state],
+    before_model_callback=log_query_to_model,
+    after_model_callback=log_model_response,
+    after_agent_callback=auto_save_session_to_memory_callback,
+    tools=[add_prompt_to_state, PreloadMemoryTool()],
     sub_agents=[zoo_concierge_agent, zoo_show_agent],
 )

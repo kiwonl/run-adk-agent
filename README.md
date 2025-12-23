@@ -31,7 +31,7 @@ The entire infrastructure is provisioned using **Terraform**, ensuring a secure,
 *   `terraform` installed
 *   Python 3.10+
 
-### 1. Infrastructure Setup with Terraform
+### Infrastructure Setup with Terraform
 
 1.  **Set Environment Variables:**
     Start from the root of the `run-adk-agent` directory.
@@ -46,7 +46,7 @@ The entire infrastructure is provisioned using **Terraform**, ensuring a secure,
     ```
 
 2.  **Update `terraform.tfvars`:**
-    This automatically injects your project details into the Terraform configuration.
+    Inject your project details into the Terraform configuration.
 
     ```bash
     sed -i \
@@ -70,7 +70,7 @@ The entire infrastructure is provisioned using **Terraform**, ensuring a secure,
     service_account_account_id = "run-ai-apps-sa"
     ```
 
-### 2. Application Deployment to Cloud Run
+### Application Deployment to Cloud Run
 
 1.  **Configure Deployment Environment:**
 
@@ -137,7 +137,7 @@ The entire infrastructure is provisioned using **Terraform**, ensuring a secure,
     ```
 
 4.  **Configure Agent Environment (.env):**
-    The agents need to know where the MCP servers are located.
+    Configure the agents with the MCP server URLs and your Google Cloud Project ID.
 
     ```bash
     # Create .env for Concierge Agent (connects to Animal MCP)
@@ -145,6 +145,10 @@ The entire infrastructure is provisioned using **Terraform**, ensuring a secure,
 
     # Create .env for Show Agent (connects to Show MCP)
     echo "MCP_SERVER_URL=https://zoo-show-mcp-server-${PROJECT_NUMBER}.${REGION}.run.app/mcp" >> ./zoo_show_agent/.env
+
+    # Update Project ID in .env files
+    sed -i -e "s|your-gcp-project-id|${PROJECT_ID}|" ./zoo_concierge_agent/.env
+    sed -i -e "s|your-gcp-project-id|${PROJECT_ID}|" ./zoo_show_agent/.env
     ```
 
 5.  **Install Google ADK:**
@@ -167,6 +171,7 @@ The entire infrastructure is provisioned using **Terraform**, ensuring a secure,
       --region=${REGION} \
       --service_name=zoo-show-agent \
       --a2a \
+      --with_ui \
       --artifact_service_uri=memory:// \
       ./zoo_show_agent \
       -- --allow-unauthenticated \
@@ -184,7 +189,7 @@ The entire infrastructure is provisioned using **Terraform**, ensuring a secure,
     ```
     ```bash
     # Update the Agent Card with the deployed URL
-    sed -i -e "s|your_agent_server_url|https://zoo-show-agent-${PROJECT_NUMBER}.${REGION}.run.ap/a2a/zoo_show_agent"|" ./zoo_concierge_agent/agent.json
+    sed -i -e "s|your_agent_server_url|https://zoo-show-agent-${PROJECT_NUMBER}.${REGION}.run.app/a2a/zoo_show_agent|" ./zoo_concierge_agent/agent.json
     ```
 
 8.  **Deploy Zoo Concierge Agent (Main Entry):**

@@ -1,3 +1,4 @@
+
 import os
 import logging
 import google.cloud.logging
@@ -14,24 +15,20 @@ import google.auth
 import google.auth.transport.requests
 import google.oauth2.id_token
 
-# --- Setup Logging and Environment ---
-cloud_logging_client = google.cloud.logging.Client()
-cloud_logging_client.setup_logging()
+# Setup Logging
+google.cloud.logging.Client().setup_logging()
 logger = logging.getLogger(__name__)
 
+# Setup Environment
 load_dotenv()
-
-# --- Configuration ---
-model_name = os.getenv("MODEL", "gemini-2.5-flash")
-
-# zoo_show_mcp_server 에 연결하도록 MCP 도구 구성
+model_name = os.getenv("MODEL")
 mcp_server_url = os.getenv("MCP_SERVER_URL")
 if not mcp_server_url:
     raise ValueError("The environment variable MCP_SERVER_URL is not set.")
 
 
+# Helper to generate ID tokens for MCP server authentication.
 def get_id_token():
-    """Get an ID token to authenticate with the MCP server."""
     target_url = os.getenv("MCP_SERVER_URL")
     audience = target_url.split("/mcp")[0]
     request = google.auth.transport.requests.Request()
@@ -39,7 +36,8 @@ def get_id_token():
     return id_token
 
 
-# MCP Server Tool 설정
+
+# Configures MCPToolset for the show data server.
 mcp_tools = MCPToolset(
     connection_params=StreamableHTTPConnectionParams(
         url=mcp_server_url,
@@ -50,22 +48,13 @@ mcp_tools = MCPToolset(
 )
 
 
-# --- Tools ---
+# Tool for reserving tickets for a specific zoo show.
 def reserve_show(show_name: str, count: int) -> str:
-    """
-    Reserves tickets for a specific zoo show.
-
-    Args:
-        show_name: The name of the show to reserve.
-        count: The number of tickets/people.
-
-    Returns:
-        A confirmation message.
-    """
     # In a real app, this would call a backend API or database.
     return f"Reservation confirmed: {count} tickets for '{show_name}'."
 
 
+# Root agent for handling show inquiries and bookings.
 root_agent = Agent(
     name="zoo_show_agent",
     model=model_name,
@@ -86,7 +75,13 @@ root_agent = Agent(
         - If the user says "yes" or wants to book:
             - Ask for the number of people (if not already provided).
             - Once you have the show name and the number of people, use the `reserve_show` tool to complete the booking.
-            - Confirm the reservation to the user with the result from the tool.
+            - **Confirmation Output:**
+                - After a successful reservation, you MUST respond with a formatted message containing the following details using the information you gathered in step 1:
+                    - **Show Name**: [Name of the show]
+                    - **Start Time**: [Start time of the show]
+                    - **Duration**: [Duration of the show]
+                    - **Reserved Count**: [Number of people]
+                    - **Notice**: Please arrive 10 minutes early. No outside food or drinks allowed.
 
     **Tone:**
     - Helpful, enthusiastic, and polite.
