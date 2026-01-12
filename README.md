@@ -251,7 +251,6 @@ https://docs.cloud.google.com/agent-builder/agent-engine/memory-bank/set-up#othe
       --region=${LOCATION} \
       --service_name=zoo-show-agent \
       --a2a \
-      --artifact_service_uri=memory:// \
       ./zoo_show_agent \
       -- --allow-unauthenticated \
       --service-account ${SERVICE_ACCOUNT} \
@@ -280,10 +279,7 @@ https://docs.cloud.google.com/agent-builder/agent-engine/memory-bank/set-up#othe
         --session_service_uri=agentengine://${AGENT_ENGINE_ID} \
         --memory_service_uri=agentengine://${AGENT_ENGINE_ID} \
         ```
-    * Cloud Run 에서 Permission Error 발생하는 이슈 해결을 위해 설정 (아래 문제 해결 참조))
-      ```
-        --artifact_service_uri=memory:// \
-        ```
+
     ```bash
     adk deploy cloud_run \
       --project=${PROJECT_ID} \
@@ -292,7 +288,6 @@ https://docs.cloud.google.com/agent-builder/agent-engine/memory-bank/set-up#othe
       --with_ui \
       --session_service_uri=agentengine://${AGENT_ENGINE_ID} \
       --memory_service_uri=agentengine://${AGENT_ENGINE_ID} \
-      --artifact_service_uri=memory:// \
       ./zoo_concierge_agent \
       -- --allow-unauthenticated \
       --service-account ${SERVICE_ACCOUNT} \
@@ -315,48 +310,3 @@ https://docs.cloud.google.com/agent-builder/agent-engine/memory-bank/set-up#othe
 -   **Codelab: Secure MCP Server on Cloud Run:** [Link](https://codelabs.developers.google.com/codelabs/cloud-run/how-to-deploy-a-secure-mcp-server-on-cloud-run?hl=ko#6)
 -   **Codelab: ADK Agent with MCP:** [Link](https://codelabs.developers.google.com/codelabs/cloud-run/use-mcp-server-on-cloud-run-with-an-adk-agent?hl=ko#0)
 [Use MCP Server on Cloud Run with an ADK Agent](https://codelabs.developers.google.com/codelabs/cloud-run/use-mcp-server-on-cloud-run-with-an-adk-agent#8)
-
-
-## 문제 해결 (Troubleshooting)
-
-<details>
-<summary>Cloud Run / GKE 배포 시 Permission Error (google-adk 1.21+ 이슈)</summary>
-
-*   **참조 이슈:** [github.com/google/adk-python/issues/3907](https://github.com/google/adk-python/issues/3907)
-
-**1. 문제 배경**
-
-`google-adk` 1.21 버전은 이전 버전(특히 1.20 이하)과 비교했을 때 **아티팩트 및 세션 관리 로직**에서 중요한 변화가 있었습니다. 해당 에러(`PermissionError`)가 발생하는 이유는 1.21 버전부터 에이전트의 실행 추적성과 상태 관리 기능이 강화되면서, 실행 시점에 내부적으로 생성하는 데이터(Artifacts)의 비중이 커졌기 때문입니다.
-```
-  File "/home/myuser/.local/lib/python3.11/site-packages/google/adk/cli/utils/local_storage.py", line 106, in create_local_artifact_service
-    artifact_root.mkdir(parents=True, exist_ok=True)
-  File "/usr/local/lib/python3.11/pathlib.py", line 1120, in mkdir
-    self.parent.mkdir(parents=True, exist_ok=True)
-  File "/usr/local/lib/python3.11/pathlib.py", line 1116, in mkdir
-    os.mkdir(self, mode)
-PermissionError: [Errno 13] Permission denied: '/app/agents/.adk'
-```
-
-**2. 상세 원인**
-
-*   **아티팩트 서비스(Artifact Service)의 역할 강화:** 1.21 버전부터는 에이전트가 실행되는 동안 발생하는 중간 데이터나 로그 성격의 아티팩트를 관리하는 로직이 더 정교해졌습니다. 이전에는 단순히 환경 변수나 설정으로 넘기던 데이터들을 이제는 명시적인 '아티팩트 서비스'를 통해 저장하려고 시도합니다.
-*   **세션 관리 로직의 변화:** `add_session_to_memory`와 같은 세션 보존 기능이 추가되면서, 세션 상태를 저장하기 위해 파일 시스템에 접근하려는 빈도가 높아졌습니다.
-*   **로컬 파일 시스템 의존성 vs Cloud Run 제약:** 별도의 설정이 없을 경우, ADK는 `./agents/.adk` 폴더를 기본 저장소로 사용하도록 설계되었습니다. 하지만 **Cloud Run 및 GKE 컨테이너 환경은 기본적으로 `/app` 경로가 읽기 전용(Read-only)**이거나 권한이 매우 제한적입니다. 따라서 ADK가 해당 경로에 쓰기를 시도할 때 `Permission denied` 에러가 발생합니다.
-
-**3. 해결 방법: `--artifact_service_uri=memory://`**
-
-이 옵션은 ADK에게 **"데이터를 디스크(Permission이 필요한 곳)에 쓰지 말고, 컨테이너가 할당받은 RAM(메모리) 공간에만 임시로 저장하라"**고 명령하는 것과 같습니다.
-
-*   **기존 방식 (Error):** `adk deploy` → Cloud Run/GKE 실행 → `/app/.adk` 폴더 생성 시도 → 거부 (Permission Denied)
-*   **해결 방식 (Success):** `adk deploy` → `--artifact_service_uri=memory://` 설정 → Cloud Run/GKE → 메모리에 데이터 적재 → 정상 작동
-
-**적용 예시:**
-
-```bash
-adk deploy  \
-  ...
-  --artifact_service_uri=memory:// \
-  ...
-```
-
-</details>
